@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+
+{% block title %}Charts - UK Weather Data{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="fas fa-chart-line"></i> Weather Data Visualization</h1>
+        <p class="lead">Interactive charts and analysis</p>
+    </div>
+</div>
+
+<!-- Controls -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-sliders-h"></i> Chart Controls
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="regionSelect" class="form-label">Region:</label>
+                        <select class="form-select" id="regionSelect" onchange="updateCharts()">
+                            <option value="UK">United Kingdom</option>
+                            <option value="England">England</option>
+                            <option value="Scotland">Scotland</option>
+                            <option value="Wales">Wales</option>
+                            <option value="Northern_Ireland">Northern Ireland</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="parameterSelect" class="form-label">Parameter:</label>
+                        <select class="form-select" id="parameterSelect" onchange="updateCharts()">
+                            <option value="Tmean">Mean Temperature</option>
+                            <option value="Tmax">Max Temperature</option>
+                            <option value="Tmin">Min Temperature</option>
+                            <option value="Rainfall">Rainfall</option>
+                            <option value="Sunshine">Sunshine</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="yearRange" class="form-label">Years to Show:</label>
+                        <select class="form-select" id="yearRange" onchange="updateCharts()">
+                            <option value="5">Last 5 Years</option>
+                            <option value="10">Last 10 Years</option>
+                            <option value="20">Last 20 Years</option>
+                            <option value="all">All Available</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="chartType" class="form-label">Chart Type:</label>
+                        <select class="form-select" id="chartType" onchange="updateCharts()">
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="area">Area Chart</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-area"></i> <span id="chartTitle">Weather Data Trend</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comparison Charts -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt"></i> Monthly Averages
+            </div>
+            <div class="card-body">
+                <canvas id="monthlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie"></i> Yearly Distribution
+            </div>
+            <div class="card-body">
+                <canvas id="yearlyChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calculator"></i> Statistics Summary
+            </div>
+            <div class="card-body" id="statsContainer">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <h4 id="avgValue">-</h4>
+                        <small class="text-muted">Average</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 id="minValue">-</h4>
+                        <small class="text-muted">Minimum</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 id="maxValue">-</h4>
+                        <small class="text-muted">Maximum</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <h4 id="totalRecords">-</h4>
+                        <small class="text-muted">Records</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let mainChart, monthlyChart, yearlyChart;
+
+// Initialize charts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    updateCharts();
+});
+
+// Initialize all charts
+function initializeCharts() {
+    // Main Chart
+    const mainCtx = document.getElementById('mainChart').getContext('2d');
+    mainChart = new Chart(mainCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Value',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true
+                }
+            }
+        }
+    });
+
+    // Monthly Chart
+    const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+    monthlyChart = new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Monthly Average',
+                data: [],
+                backgroundColor: 'rgba(153, 102, 255, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+
+    // Yearly Chart
+    const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+    yearlyChart = new Chart(yearlyCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Yearly Average',
+                data: [],
+                borderColor: 'rgb(255, 159, 64)',
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
+// Update all charts
+function updateCharts() {
+    const region = document.getElementById('regionSelect').value;
+    const parameter = document.getElementById('parameterSelect').value;
+    const yearRange = document.getElementById('yearRange').value;
+    const chartType = document.getElementById('chartType').value;
+    
+    // Update chart title
+    const regionName = document.getElementById('regionSelect').options[document.getElementById('regionSelect').selectedIndex].text;
+    const parameterName = document.getElementById('parameterSelect').options[document.getElementById('parameterSelect').selectedIndex].text;
+    document.getElementById('chartTitle').textContent = `${parameterName} - ${regionName}`;
+    
+    // Load main chart data
+    fetch(`/api/chart-data/?region=${region}&parameter=${parameter}`)
+        .then(response => response.json())
+        .then(data => {
+            updateMainChart(data, chartType, yearRange);
+            calculateStatistics(data.values);
+        })
+        .catch(error => console.error('Error loading chart data:', error));
+    
+    // Load monthly averages
+    loadMonthlyAverages(region, parameter);
+    
+    // Load yearly averages
+    loadYearlyAverages(region, parameter);
+}
+
+// Update main chart
+function updateMainChart(data, chartType, yearRange) {
+    let filteredData = data;
+    
+    // Filter by year range
+    if (yearRange !== 'all') {
+        const years = parseInt(yearRange);
+        const totalMonths = years * 12;
+        filteredData = {
+            labels: data.labels.slice(-totalMonths),
+            values: data.values.slice(-totalMonths)
+        };
+    }
+    
+    // Update chart type
+    mainChart.config.type = chartType;
+    if (chartType === 'area') {
+        mainChart.config.type = 'line';
+        mainChart.data.datasets[0].fill = true;
+    } else {
+        mainChart.data.datasets[0].fill = false;
+    }
+    
+    mainChart.data.labels = filteredData.labels;
+    mainChart.data.datasets[0].data = filteredData.values;
+    mainChart.update();
+}
+
+// Load monthly averages
+function loadMonthlyAverages(region, parameter) {
+    fetch(`/api/weather-data/?region=${region}&parameter=${parameter}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.results) {
+                const monthlyData = new Array(12).fill(0);
+                const monthlyCounts = new Array(12).fill(0);
+                
+                data.results.forEach(record => {
+                    const monthIndex = record.month - 1;
+                    monthlyData[monthIndex] += record.value;
+                    monthlyCounts[monthIndex]++;
+                });
+                
+                // Calculate averages
+                const monthlyAverages = monthlyData.map((sum, index) => 
+                    monthlyCounts[index] > 0 ? sum / monthlyCounts[index] : 0
+                );
+                
+                monthlyChart.data.datasets[0].data = monthlyAverages;
+                monthlyChart.update();
+            }
+        })
+        .catch(error => console.error('Error loading monthly data:', error));
+}
+
+// Load yearly averages
+function loadYearlyAverages(region, parameter) {
+    fetch(`/api/summary/?region=${region}&parameter=${parameter}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const years = data.map(item => item.year);
+                const averages = data.map(item => item.avg_value);
+                
+                yearlyChart.data.labels = years;
+                yearlyChart.data.datasets[0].data = averages;
+                yearlyChart.update();
+            }
+        })
+        .catch(error => console.error('Error loading yearly data:', error));
+}
+
+// Calculate and display statistics
+function calculateStatistics(values) {
+    if (values && values.length > 0) {
+        const sum = values.reduce((a, b) => a + b, 0);
+        const avg = sum / values.length;
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        
+        document.getElementById('avgValue').textContent = avg.toFixed(2);
+        document.getElementById('minValue').textContent = min.toFixed(2);
+        document.getElementById('maxValue').textContent = max.toFixed(2);
+        document.getElementById('totalRecords').textContent = values.length;
+    }
+}
+</script>
+{% endblock %}
