@@ -23,12 +23,12 @@ from .parsers import MetOfficeParser
 # API Views
 class WeatherRegionListView(generics.ListAPIView):
     """List all weather regions"""
-    queryset = WeatherRegion.objects.all()
+    queryset = WeatherRegion.objects.all().order_by('name')
     serializer_class = WeatherRegionSerializer
 
 class WeatherParameterListView(generics.ListAPIView):
     """List all weather parameters"""
-    queryset = WeatherParameter.objects.all()
+    queryset = WeatherParameter.objects.all().order_by('code')
     serializer_class = WeatherParameterSerializer
 
 class WeatherDataListView(generics.ListAPIView):
@@ -122,7 +122,7 @@ class WeatherSummaryView(APIView):
 
 class DataSourceListView(generics.ListAPIView):
     """List all data sources"""
-    queryset = DataSource.objects.select_related('region', 'parameter')
+    queryset = DataSource.objects.select_related('region', 'parameter').order_by('region__name', 'parameter__name')
     serializer_class = DataSourceSerializer
 
 # Frontend Views
