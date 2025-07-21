@@ -144,21 +144,18 @@
 
 {% block extra_js %}
 <script>
-// Dashboard JavaScript
-let tempChart, rainChart, yearlyTempChart, yearlyRainChart;
+let charts = {};
+let tempChart, rainChart;
 
-// Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     loadWeatherData();
     initializeCharts();
 });
 
-// Refresh dashboard
 function refreshDashboard() {
     location.reload();
 }
 
-// Load weather data for table
 function loadWeatherData() {
     fetch('/api/weather-data/?limit=50')
         .then(response => response.json())
@@ -183,8 +180,7 @@ function loadWeatherData() {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center">No data available</td></tr>';
             }
         })
-        .catch(error => {
-            console.error('Error loading weather data:', error);
+        .catch(() => {
             document.getElementById('weatherTableBody').innerHTML = 
                 '<tr><td colspan="6" class="text-center text-danger">Error loading data</td></tr>';
         });
@@ -244,18 +240,16 @@ function initializeCharts() {
         }
     });
 
-    // Load chart data
     loadChartData();
 }
 
-// Load chart data
 function loadChartData() {
-    // Load temperature data for line chart
-    fetch('/api/chart-data/?region=UK&parameter=Tmean')
+    const region = 'UK';
+    
+    fetch(`/api/chart-data/?region=${region}&parameter=Tmean`)
         .then(response => response.json())
         .then(data => {
             if (data.labels && data.values) {
-                // Show last 24 months only for line chart
                 const recentData = data.labels.slice(-24).map((label, index) => ({
                     label: label,
                     value: data.values[data.values.length - 24 + index]
@@ -265,18 +259,15 @@ function loadChartData() {
                 tempChart.data.datasets[0].data = recentData.map(d => d.value);
                 tempChart.update();
                 
-                // Process data for yearly temperature pie chart
-                processYearlyData(data, 'temperature');
+                loadYearlyAverages(region, 'Tmean', 'temperature');
             }
         })
-        .catch(error => console.error('Error loading temperature data:', error));
+        .catch(() => {});
 
-    // Load rainfall data for line chart
-    fetch('/api/chart-data/?region=UK&parameter=Rainfall')
+    fetch(`/api/chart-data/?region=${region}&parameter=Rainfall`)
         .then(response => response.json())
         .then(data => {
             if (data.labels && data.values) {
-                // Show last 24 months only for line chart
                 const recentData = data.labels.slice(-24).map((label, index) => ({
                     label: label,
                     value: data.values[data.values.length - 24 + index]
@@ -286,97 +277,137 @@ function loadChartData() {
                 rainChart.data.datasets[0].data = recentData.map(d => d.value);
                 rainChart.update();
                 
-                // Process data for yearly rainfall pie chart
-                processYearlyData(data, 'rainfall');
+             
+                loadYearlyAverages(region, 'Rainfall', 'rainfall');
             }
         })
-        .catch(error => console.error('Error loading rainfall data:', error));
+        .catch(() => {});
 }
 
-// Process data for yearly pie charts
-function processYearlyData(data, type) {
-    // Group data by year
-    const yearlyData = {};
+function loadYearlyAverages(region, parameter, type) {
+    const url = `/api/summary/?region=${region}&parameter=${parameter}`;
+    console.log(`Fetching data from: ${url}`);
     
-    data.labels.forEach((label, index) => {
-        const year = label.split('-')[0]; // Extract year from date
-        if (!yearlyData[year]) {
-            yearlyData[year] = [];
-        }
-        if (data.values[index] !== null) {
-            yearlyData[year].push(parseFloat(data.values[index]));
-        }
-    });
-    
-    // Calculate yearly averages
-    const years = Object.keys(yearlyData).sort();
-    const averages = years.map(year => {
-        const values = yearlyData[year];
-        const sum = values.reduce((a, b) => a + b, 0);
-        return parseFloat((sum / values.length).toFixed(2));
-    });
-    
-    // Update the appropriate chart
-    if (type === 'temperature') {
-        updateYearlyChart('yearlyTempChart', 'Yearly Average Temperature (°C)', years, averages, 'rgb(255, 99, 132)');
-    } else if (type === 'rainfall') {
-        updateYearlyChart('yearlyRainChart', 'Yearly Average Rainfall (mm)', years, averages, 'rgb(54, 162, 235)');
-    }
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(`Received data for ${parameter}:`, data);
+            
+            if (data && data.length > 0) {
+                const years = data.map(item => item.year);
+                const averages = data.map(item => item.avg_value);
+                
+                console.log(`Processed years:`, years);
+                console.log(`Processed averages:`, averages);
+                
+                if (type === 'temperature') {
+                    updateYearlyChart('yearlyTempChart', 'Yearly Average Temperature (°C)', years, averages, 'rgb(255, 99, 132)');
+                } else if (type === 'rainfall') {
+                    updateYearlyChart('yearlyRainChart', 'Yearly Average Rainfall (mm)', years, averages, 'rgb(54, 162, 235)');
+                }
+            } else {
+                console.warn(`No data returned for ${parameter}`);
+            }
+        })
+        .catch(() => {});
 }
 
-// Update yearly pie charts
 function updateYearlyChart(chartId, label, years, values, color) {
-    const ctx = document.getElementById(chartId).getContext('2d');
+    const canvas = document.getElementById(chartId);
+    if (!canvas) return;
     
-    // Generate colors for each year
-    const backgroundColors = years.map((_, i) => {
-        const opacity = 0.7 + (i * 0.05);
-        return color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
-    });
+    if (charts[chartId]) {
+        try {
+            charts[chartId].destroy();
+        } catch (e) {
+            return;
+        }
+    }
     
-    // If chart already exists, update it. Otherwise, create new.
-    if (window[chartId]) {
-        window[chartId].data.labels = years;
-        window[chartId].data.datasets[0].data = values;
-        window[chartId].update();
-    } else {
-        window[chartId] = new Chart(ctx, {
-            type: 'pie',  // Changed from 'bar' to 'pie'
+    try {
+        const maxYearsToShow = 50;
+        const showYears = years.length > maxYearsToShow ? years.slice(-maxYearsToShow) : years;
+        const showValues = values.length > maxYearsToShow ? values.slice(-maxYearsToShow) : values;
+        
+        charts[chartId] = new Chart(canvas, {
+            type: 'bar',
             data: {
-                labels: years,
+                labels: showYears,
                 datasets: [{
                     label: label,
-                    data: values,
-                    backgroundColor: backgroundColors,
+                    data: showValues,
+                    backgroundColor: showYears.map((_, i) => {
+                        const opacity = 0.6 + (i * 0.01);
+                        return color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
+                    }),
                     borderColor: color,
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderSkipped: false
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: label.includes('Rainfall'),
+                        title: {
+                            display: true,
+                            text: label.includes('Temperature') ? '°C' : 'mm'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Year'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: 20
+                        }
+                    }
+                },
                 plugins: {
                     legend: {
-                        position: 'right',
+                        display: false
                     },
                     title: {
                         display: true,
                         text: label,
+                        font: {
+                            size: 14
+                        },
                         padding: {
-                            bottom: 10
+                            top: 10,
+                            bottom: 20
                         }
                     },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                return `${context.label}: ${context.raw} ${label.includes('Temperature') ? '°C' : 'mm'}`;
+                                return `${context.parsed.y.toFixed(2)} ${label.includes('Temperature') ? '°C' : 'mm'}`;
                             }
                         }
                     }
-                }
+                },
+                animation: {
+                    duration: 1000
+                },
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
             }
         });
+    } catch (error) {
+        return;
     }
 }
+
 </script>
 {% endblock %}

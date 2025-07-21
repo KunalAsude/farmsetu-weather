@@ -102,53 +102,26 @@ class WeatherSummaryView(APIView):
     """Get weather data summary with statistics"""
     
     def get(self, request):
-        region = request.query_params.get('region', None)
-        parameter = request.query_params.get('parameter', None)
-        year = request.query_params.get('year', None)
+        # Get query parameters with defaults
+        region = request.query_params.get('region', 'UK')  # Default to UK
+        parameter = request.query_params.get('parameter', 'Tmean')  # Default to Tmean
         
-        queryset = WeatherData.objects.all()
+        # Get yearly averages for the selected region and parameter
+        yearly_avg = WeatherData.objects.filter(
+            region__code=region,
+            parameter__code=parameter
+        ).values('year').annotate(
+            avg_value=Avg('value')
+        ).order_by('year')
         
-        if region:
-            queryset = queryset.filter(region__code=region)
-        if parameter:
-            queryset = queryset.filter(parameter__code=parameter)
-        if year:
-            queryset = queryset.filter(year=year)
-        
-        # Get total record count
-        total_records = queryset.count()
-        
-        # Get date range
-        date_range = queryset.aggregate(
-            min_year=Min('year'),
-            max_year=Max('year')
-        )
-        
-        # Get unique regions and parameters
-        regions = list(WeatherRegion.objects.values('code', 'name').distinct())
-        parameters = list(WeatherParameter.objects.values('code', 'name').distinct())
-        
-        # Group by region, parameter, and year for detailed statistics
-        summary = queryset.values(
-            'region__name', 'parameter__name', 'year'
-        ).annotate(
-            avg_value=Avg('value'),
-            min_value=Min('value'),
-            max_value=Max('value'),
-            count=Count('value')
-        ).order_by('-year')
-        
-        # Prepare the response data
-        response_data = {
-            'total_records': total_records,
-            'data_range': {
-                'min_year': date_range['min_year'],
-                'max_year': date_range['max_year']
-            },
-            'regions': regions,
-            'parameters': parameters,
-            'summary': list(summary)
-        }
+        # Format the response data as an array of {year, avg_value} objects
+        response_data = [
+            {
+                'year': str(item['year']),
+                'avg_value': round(float(item['avg_value']), 2)
+            }
+            for item in yearly_avg
+        ]
         
         return Response(response_data)
 
