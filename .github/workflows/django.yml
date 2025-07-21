@@ -43,11 +43,16 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-django pytest-cov
     
-    - name: Run tests
+    - name: Create static files directory
+      run: mkdir -p static
+      
+    - name: Run tests with Django test runner
       env:
         DATABASE_URL: ${{ env.DATABASE_URL }}
         SECRET_KEY: test-secret-key
         DEBUG: 'True'
+        STATIC_ROOT: ${{ github.workspace }}/staticfiles
+        STATICFILES_DIRS: ${{ github.workspace }}/static
       run: |
         python manage.py test --noinput
         pytest --cov=.
