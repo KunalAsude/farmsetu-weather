@@ -10,7 +10,6 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card stats-card">
@@ -44,7 +43,6 @@
     </div>
 </div>
 
-<!-- Data Controls -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
@@ -63,7 +61,6 @@
     </div>
 </div>
 
-<!-- Quick Charts -->
 <div class="row">
     <div class="col-md-6">
         <div class="card h-100">
@@ -87,7 +84,6 @@
     </div>
 </div>
 
-<!-- Yearly Distribution -->
 <div class="row mt-4">
     <div class="col-md-12">
         <div class="card">
@@ -108,7 +104,6 @@
     </div>
 </div>
 
-<!-- Data Tables -->
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
@@ -186,9 +181,7 @@ function loadWeatherData() {
         });
 }
 
-// Initialize charts
 function initializeCharts() {
-    // Temperature Chart
     const tempCtx = document.getElementById('tempChart').getContext('2d');
     tempChart = new Chart(tempCtx, {
         type: 'line',
@@ -213,7 +206,7 @@ function initializeCharts() {
         }
     });
 
-    // Rainfall Chart
+
     const rainCtx = document.getElementById('rainChart').getContext('2d');
     rainChart = new Chart(rainCtx, {
         type: 'bar',
@@ -222,11 +215,11 @@ function initializeCharts() {
             datasets: [{
                 label: 'Rainfall (mm)',
                 data: [],
-                backgroundColor: 'rgba(0, 82, 204, 0.9)',  // Darker blue with higher opacity
-                borderColor: 'rgba(0, 51, 153, 1)',       // Even darker blue for border
+                backgroundColor: 'rgba(0, 82, 204, 0.9)',  
+                borderColor: 'rgba(0, 51, 153, 1)',       
                 borderWidth: 1,
-                borderRadius: 4,                          // Slight rounding of bar corners
-                borderSkipped: false                      // Apply border radius to all sides
+                borderRadius: 4,                          
+                borderSkipped: false                      
             }]
         },
         options: {
@@ -242,6 +235,8 @@ function initializeCharts() {
 
     loadChartData();
 }
+
+
 
 function loadChartData() {
     const region = 'UK';
@@ -284,6 +279,8 @@ function loadChartData() {
         .catch(() => {});
 }
 
+
+
 function loadYearlyAverages(region, parameter, type) {
     const url = `/api/summary/?region=${region}&parameter=${parameter}`;
     console.log(`Fetching data from: ${url}`);
@@ -298,9 +295,9 @@ function loadYearlyAverages(region, parameter, type) {
         .then(data => {
             console.log(`Received data for ${parameter}:`, data);
             
-            if (data && data.length > 0) {
-                const years = data.map(item => item.year);
-                const averages = data.map(item => item.avg_value);
+            if (data && data.summary && data.summary.length > 0) {
+                const years = data.summary.map(item => item.year);
+                const averages = data.summary.map(item => item.avg_value);
                 
                 console.log(`Processed years:`, years);
                 console.log(`Processed averages:`, averages);
@@ -314,7 +311,9 @@ function loadYearlyAverages(region, parameter, type) {
                 console.warn(`No data returned for ${parameter}`);
             }
         })
-        .catch(() => {});
+        .catch(error => {
+            console.error('Error loading yearly averages:', error);
+        });
 }
 
 function updateYearlyChart(chartId, label, years, values, color) {
@@ -408,6 +407,5 @@ function updateYearlyChart(chartId, label, years, values, color) {
         return;
     }
 }
-
 </script>
 {% endblock %}
