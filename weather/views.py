@@ -27,15 +27,18 @@ class WeatherRegionListView(generics.ListAPIView):
     """List all weather regions"""
     queryset = WeatherRegion.objects.all().order_by('name')
     serializer_class = WeatherRegionSerializer
+    permission_classes = []  # No authentication required
 
 class WeatherParameterListView(generics.ListAPIView):
     """List all weather parameters"""
     queryset = WeatherParameter.objects.all().order_by('code')
     serializer_class = WeatherParameterSerializer
+    permission_classes = []  # No authentication required
 
 class WeatherDataListView(generics.ListAPIView):
     """List weather data with filtering"""
     serializer_class = WeatherDataSerializer
+    permission_classes = []  # No authentication required
     
     def get_queryset(self):
         queryset = WeatherData.objects.select_related('region', 'parameter')
@@ -69,6 +72,7 @@ class WeatherDataDetailView(generics.RetrieveAPIView):
     """Get specific weather data record"""
     queryset = WeatherData.objects.select_related('region', 'parameter')
     serializer_class = WeatherDataSerializer
+    permission_classes = []  # No authentication required
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ParseDataView(APIView):
