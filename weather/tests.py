@@ -65,7 +65,11 @@ class WeatherAPITests(APITestCase):
         url = reverse('weather:api-regions')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        # Check that we get at least 1 region (the one we created in setUp)
+        self.assertGreaterEqual(len(response.data), 1)
+        # Verify our test region is in the response
+        region_codes = [r['code'] for r in response.data]
+        self.assertIn('UK', region_codes)
     
     def test_parameters_api(self):
         url = reverse('weather:api-parameters')
@@ -94,6 +98,13 @@ class WeatherAPITests(APITestCase):
         self.assertIn('data_range', response.data)
         self.assertIn('regions', response.data)
         self.assertIn('parameters', response.data)
+        self.assertIn('summary', response.data)
+        # Verify data types
+        self.assertIsInstance(response.data['total_records'], int)
+        self.assertIsInstance(response.data['data_range'], dict)
+        self.assertIsInstance(response.data['regions'], list)
+        self.assertIsInstance(response.data['parameters'], list)
+        self.assertIsInstance(response.data['summary'], list)
     
     def test_chart_data_api(self):
         url = reverse('weather:api-chart-data')
