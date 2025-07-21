@@ -1,6 +1,6 @@
 # 🌦️ FarmSetu Weather Data API & Analytics Platform
 
-[![Build Status](https://github.com/yourusername/farmsetu-weather/actions/workflows/django.yml/badge.svg)](https://github.com/KunalAsude/farmsetu-weather/actions)
+[![Build Status](https://github.com/KunalAsude/farmsetu-weather/actions/workflows/django.yml/badge.svg)](https://github.com/KunalAsude/farmsetu-weather/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)](https://python.org)
 [![Django](https://img.shields.io/badge/django-4.2-green.svg)](https://djangoproject.com)
