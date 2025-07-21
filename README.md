@@ -83,7 +83,12 @@ Most list endpoints support filtering using query parameters:
 - `region`: Filter by region code (e.g., `UK`)
 - `parameter`: Filter by parameter code (e.g., `Tmean` for mean temperature)
 - `year`: Filter by specific year
-- `month`: Filter by specific month (1-12)
+- `year_from`: Filter records from this year (inclusive)
+- `year_to`: Filter records up to this year (inclusive)
+
+For date range filtering, you can use either:
+- Single year: `?year=2023`
+- Year range: `?year_from=2020&year_to=2023`
 
 ## Local Development
 
