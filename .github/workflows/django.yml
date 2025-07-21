@@ -46,7 +46,7 @@ jobs:
     - name: Create static files directory
       run: mkdir -p static
       
-    - name: Run tests with Django test runner
+    - name: Run tests with pytest and coverage
       env:
         DATABASE_URL: ${{ env.DATABASE_URL }}
         SECRET_KEY: test-secret-key
@@ -54,8 +54,11 @@ jobs:
         STATIC_ROOT: ${{ github.workspace }}/staticfiles
         STATICFILES_DIRS: ${{ github.workspace }}/static
       run: |
-        python manage.py test --noinput
-        pytest --cov=.
+        # Run tests with coverage
+        python -m pytest --cov=weather --cov-report=term-missing --cov-fail-under=0
+        
+        # Optionally, you can still run Django's test runner if needed
+        # python manage.py test --noinput
 
   deploy:
     name: Deploy to production
