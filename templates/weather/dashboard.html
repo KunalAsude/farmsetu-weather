@@ -49,16 +49,15 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-download"></i> Data Management
+                <i class="fas fa-sync"></i> Data Refresh
             </div>
             <div class="card-body">
-                <button class="btn btn-primary" onclick="parseAllData()">
-                    <i class="fas fa-sync"></i> Parse All Data
+                <button class="btn btn-info" onclick="refreshDashboard()">
+                    <i class="fas fa-redo"></i> Refresh Dashboard
                 </button>
-                <button class="btn btn-info ms-2" onclick="refreshDashboard()">
-                    <i class="fas fa-refresh"></i> Refresh Dashboard
-                </button>
-                <div id="parseStatus" class="mt-3"></div>
+                <div class="mt-2 text-muted small">
+                    <i class="fas fa-info-circle"></i> Data is automatically loaded from the database.
+                </div>
             </div>
         </div>
     </div>
@@ -67,9 +66,9 @@
 <!-- Quick Charts -->
 <div class="row">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
-                <i class="fas fa-thermometer-half"></i> UK Temperature Trend
+                <i class="fas fa-thermometer-half"></i> UK Temperature Trend (Last 2 Years)
             </div>
             <div class="card-body">
                 <canvas id="tempChart" height="200"></canvas>
@@ -77,12 +76,33 @@
         </div>
     </div>
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
-                <i class="fas fa-cloud-rain"></i> UK Rainfall Trend
+                <i class="fas fa-cloud-rain"></i> UK Rainfall Trend (Last 2 Years)
             </div>
             <div class="card-body">
                 <canvas id="rainChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yearly Distribution -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie"></i> Yearly Averages
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="yearlyTempChart" height="250"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="yearlyRainChart" height="250"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -125,40 +145,13 @@
 {% block extra_js %}
 <script>
 // Dashboard JavaScript
-let tempChart, rainChart;
+let tempChart, rainChart, yearlyTempChart, yearlyRainChart;
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     loadWeatherData();
     initializeCharts();
 });
-
-// Parse all data function
-function parseAllData() {
-    const statusDiv = document.getElementById('parseStatus');
-    statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin"></i> Parsing data...</div>';
-    
-    fetch('/api/parse-data/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({})
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            statusDiv.innerHTML = '<div class="alert alert-success"><i class="fas fa-check"></i> Data parsing completed successfully!</div>';
-            setTimeout(refreshDashboard, 2000);
-        } else {
-            statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Error parsing data</div>';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Error parsing data</div>';
-    });
-}
 
 // Refresh dashboard
 function refreshDashboard() {
@@ -233,9 +226,11 @@ function initializeCharts() {
             datasets: [{
                 label: 'Rainfall (mm)',
                 data: [],
-                backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
+                backgroundColor: 'rgba(0, 82, 204, 0.9)',  // Darker blue with higher opacity
+                borderColor: 'rgba(0, 51, 153, 1)',       // Even darker blue for border
+                borderWidth: 1,
+                borderRadius: 4,                          // Slight rounding of bar corners
+                borderSkipped: false                      // Apply border radius to all sides
             }]
         },
         options: {
@@ -255,12 +250,12 @@ function initializeCharts() {
 
 // Load chart data
 function loadChartData() {
-    // Load temperature data
+    // Load temperature data for line chart
     fetch('/api/chart-data/?region=UK&parameter=Tmean')
         .then(response => response.json())
         .then(data => {
             if (data.labels && data.values) {
-                // Show last 24 months only
+                // Show last 24 months only for line chart
                 const recentData = data.labels.slice(-24).map((label, index) => ({
                     label: label,
                     value: data.values[data.values.length - 24 + index]
@@ -269,16 +264,19 @@ function loadChartData() {
                 tempChart.data.labels = recentData.map(d => d.label);
                 tempChart.data.datasets[0].data = recentData.map(d => d.value);
                 tempChart.update();
+                
+                // Process data for yearly temperature pie chart
+                processYearlyData(data, 'temperature');
             }
         })
         .catch(error => console.error('Error loading temperature data:', error));
 
-    // Load rainfall data
+    // Load rainfall data for line chart
     fetch('/api/chart-data/?region=UK&parameter=Rainfall')
         .then(response => response.json())
         .then(data => {
             if (data.labels && data.values) {
-                // Show last 24 months only
+                // Show last 24 months only for line chart
                 const recentData = data.labels.slice(-24).map((label, index) => ({
                     label: label,
                     value: data.values[data.values.length - 24 + index]
@@ -287,9 +285,98 @@ function loadChartData() {
                 rainChart.data.labels = recentData.map(d => d.label);
                 rainChart.data.datasets[0].data = recentData.map(d => d.value);
                 rainChart.update();
+                
+                // Process data for yearly rainfall pie chart
+                processYearlyData(data, 'rainfall');
             }
         })
         .catch(error => console.error('Error loading rainfall data:', error));
+}
+
+// Process data for yearly pie charts
+function processYearlyData(data, type) {
+    // Group data by year
+    const yearlyData = {};
+    
+    data.labels.forEach((label, index) => {
+        const year = label.split('-')[0]; // Extract year from date
+        if (!yearlyData[year]) {
+            yearlyData[year] = [];
+        }
+        if (data.values[index] !== null) {
+            yearlyData[year].push(parseFloat(data.values[index]));
+        }
+    });
+    
+    // Calculate yearly averages
+    const years = Object.keys(yearlyData).sort();
+    const averages = years.map(year => {
+        const values = yearlyData[year];
+        const sum = values.reduce((a, b) => a + b, 0);
+        return parseFloat((sum / values.length).toFixed(2));
+    });
+    
+    // Update the appropriate chart
+    if (type === 'temperature') {
+        updateYearlyChart('yearlyTempChart', 'Yearly Average Temperature (°C)', years, averages, 'rgb(255, 99, 132)');
+    } else if (type === 'rainfall') {
+        updateYearlyChart('yearlyRainChart', 'Yearly Average Rainfall (mm)', years, averages, 'rgb(54, 162, 235)');
+    }
+}
+
+// Update yearly pie charts
+function updateYearlyChart(chartId, label, years, values, color) {
+    const ctx = document.getElementById(chartId).getContext('2d');
+    
+    // Generate colors for each year
+    const backgroundColors = years.map((_, i) => {
+        const opacity = 0.7 + (i * 0.05);
+        return color.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
+    });
+    
+    // If chart already exists, update it. Otherwise, create new.
+    if (window[chartId]) {
+        window[chartId].data.labels = years;
+        window[chartId].data.datasets[0].data = values;
+        window[chartId].update();
+    } else {
+        window[chartId] = new Chart(ctx, {
+            type: 'pie',  // Changed from 'bar' to 'pie'
+            data: {
+                labels: years,
+                datasets: [{
+                    label: label,
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    borderColor: color,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    title: {
+                        display: true,
+                        text: label,
+                        padding: {
+                            bottom: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw} ${label.includes('Temperature') ? '°C' : 'mm'}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 </script>
 {% endblock %}
