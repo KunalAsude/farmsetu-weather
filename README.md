@@ -4,6 +4,8 @@
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker)](https://www.docker.com/)
 [![GitHub Actions](https://github.com/yourusername/farmsetu-weather/actions/workflows/django.yml/badge.svg)](https://github.com/yourusername/farmsetu-weather/actions)
 
+> **Latest Update (July 2024)**: Added interactive dashboard with yearly averages visualization and improved data filtering capabilities.
+
 A comprehensive Django application featuring a REST API and interactive dashboard for parsing, storing, and visualizing UK weather data from MetOffice's `UK.txt` format. This project provides:
 
 - 📊 Interactive dashboard with charts and data visualization
@@ -70,6 +72,9 @@ farmsetu_weather_project/
 
 ## Key Features
 
+- **Interactive Dashboard**: Real-time visualization of weather data with interactive charts
+- **Yearly Averages**: View historical trends with yearly average temperature and rainfall data
+- **Responsive Design**: Works on all device sizes from mobile to desktop
 - **Data Parsing**: Efficient parsing of MetOffice's `UK.txt` format
 - **RESTful API**: Clean, well-documented endpoints following REST principles
 - **Data Filtering**: Filter weather data by region, parameter, and date range
@@ -79,16 +84,32 @@ farmsetu_weather_project/
 
 ## API Endpoints
 
+### Core Endpoints
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/regions/` | GET | List all available regions |
 | `/api/parameters/` | GET | List all weather parameters |
 | `/api/weather-data/` | GET | List all weather data (filterable) |
 | `/api/weather-data/<id>/` | GET | Get specific weather record |
-| `/api/summary/` | GET | Get weather data summary |
-| `/api/data-sources/` | GET | List available data sources |
-| `/api/chart-data/` | GET | Get formatted data for charts |
 | `/api/parse-data/` | POST | Trigger data parsing (admin only) |
+
+### Dashboard Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/summary/` | GET | Get yearly averages for a region and parameter |
+| `/api/chart-data/` | GET | Get formatted monthly data for charts |
+
+#### Summary Endpoint Parameters
+- `region`: Region code (e.g., 'UK')
+- `parameter`: Weather parameter (e.g., 'Tmean' for temperature, 'Rainfall')
+
+Example: `/api/summary/?region=UK&parameter=Tmean`
+
+#### Chart Data Endpoint Parameters
+- `region`: Region code (e.g., 'UK')
+- `parameter`: Weather parameter (e.g., 'Tmean', 'Rainfall')
+- `year_from`: Optional start year
+- `year_to`: Optional end year
 
 ### Query Parameters
 
@@ -103,6 +124,20 @@ Most list endpoints support filtering using query parameters:
 For date range filtering, you can use either:
 - Single year: `?year=2023`
 - Year range: `?year_from=2020&year_to=2023`
+
+## Dashboard Features
+
+### Interactive Visualization
+- **Temperature Trends**: View monthly temperature trends for the last 2 years
+- **Rainfall Analysis**: Track rainfall patterns with interactive charts
+- **Yearly Averages**: Compare yearly average temperature and rainfall data
+- **Responsive Design**: Optimized for both desktop and mobile viewing
+
+### Data Exploration
+- Filter data by region and parameter
+- View detailed tooltips on hover
+- Download charts as images
+- Responsive layout adapts to screen size
 
 ## Local Development
 
@@ -186,6 +221,12 @@ coverage report
    ```bash
    docker run -p 8000:8000 farmsetu-weather-api
    ```
+
+## Accessing the Dashboard
+
+After starting the application, access the dashboard at:
+- Dashboard: http://localhost:8000/dashboard/
+- API Documentation: http://localhost:8000/api/docs/
 
 ## Deployment
 
