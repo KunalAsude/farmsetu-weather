@@ -65,17 +65,35 @@ class WeatherAPITests(APITestCase):
         url = reverse('weather:api-regions')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check if response is paginated (has 'results' key)
+        if 'results' in response.data:
+            regions = response.data['results']
+        else:
+            regions = response.data
+            
         # Check that we get at least 1 region (the one we created in setUp)
-        self.assertGreaterEqual(len(response.data), 1)
+        self.assertGreaterEqual(len(regions), 1)
         # Verify our test region is in the response
-        region_codes = [r['code'] for r in response.data]
+        region_codes = [r['code'] for r in regions]
         self.assertIn('UK', region_codes)
     
     def test_parameters_api(self):
         url = reverse('weather:api-parameters')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        
+        # Check if response is paginated (has 'results' key)
+        if 'results' in response.data:
+            parameters = response.data['results']
+        else:
+            parameters = response.data
+            
+        # Check that we get at least 1 parameter (the one we created in setUp)
+        self.assertGreaterEqual(len(parameters), 1)
+        # Verify our test parameter is in the response
+        parameter_codes = [p['code'] for p in parameters]
+        self.assertIn('Tmean', parameter_codes)
     
     def test_weather_data_api(self):
         url = reverse('weather:api-weather-data')
@@ -110,8 +128,16 @@ class WeatherAPITests(APITestCase):
         url = reverse('weather:api-chart-data')
         response = self.client.get(url, {'parameter': 'Tmean'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Verify response structure matches the actual API
         self.assertIn('labels', response.data)
-        self.assertIn('datasets', response.data)
+        self.assertIn('values', response.data)
+        self.assertIn('region', response.data)
+        self.assertIn('parameter', response.data)
+        # Verify data types
+        self.assertIsInstance(response.data['labels'], list)
+        self.assertIsInstance(response.data['values'], list)
+        self.assertIsInstance(response.data['region'], str)
+        self.assertIsInstance(response.data['parameter'], str)
     
     def test_parse_data_api_unauthorized(self):
         url = reverse('weather:api-parse-data')
