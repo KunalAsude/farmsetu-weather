@@ -4,7 +4,6 @@
 [![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker)](https://www.docker.com/)
 [![GitHub Actions](https://github.com/yourusername/farmsetu-weather/actions/workflows/django.yml/badge.svg)](https://github.com/yourusername/farmsetu-weather/actions)
 
-> **Latest Update (July 2024)**: Added interactive dashboard with yearly averages visualization and improved data filtering capabilities.
 
 A comprehensive Django application featuring a REST API and interactive dashboard for parsing, storing, and visualizing UK weather data from MetOffice's `UK.txt` format. This project provides:
 
