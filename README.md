@@ -1,13 +1,27 @@
-# FarmSetu Weather Data API
+# 🌦️ FarmSetu Weather Data API & Dashboard
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/Docker-Supported-2496ED?logo=docker)](https://www.docker.com/)
+[![GitHub Actions](https://github.com/yourusername/farmsetu-weather/actions/workflows/django.yml/badge.svg)](https://github.com/yourusername/farmsetu-weather/actions)
 
-A robust Django REST API for parsing, storing, and serving UK weather data from MetOffice's `UK.txt` format. This project provides clean, well-documented endpoints for accessing historical weather data with filtering and aggregation capabilities.
+A comprehensive Django application featuring a REST API and interactive dashboard for parsing, storing, and visualizing UK weather data from MetOffice's `UK.txt` format. This project provides:
+
+- 📊 Interactive dashboard with charts and data visualization
+- 🔍 Clean, well-documented REST API endpoints
+- 🐳 Docker support for easy deployment
+- 🔄 CI/CD pipeline with GitHub Actions
+- 📱 Responsive design for all devices
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
+- [Features](#features)
+- [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
+- [API Documentation](#api-documentation)
+- [Docker Deployment](#docker-deployment)
+- [Development Setup](#development-setup)
+- [Running Tests](#running-tests)
+- [License](#license)
 - [Key Features](#key-features)
 - [API Endpoints](#api-endpoints)
 - [Local Development](#local-development)
