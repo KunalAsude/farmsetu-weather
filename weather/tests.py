@@ -62,31 +62,31 @@ class WeatherAPITests(APITestCase):
         )
     
     def test_regions_api(self):
-        url = reverse('api-regions')
+        url = reverse('weather:api-regions')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
     
     def test_parameters_api(self):
-        url = reverse('api-parameters')
+        url = reverse('weather:api-parameters')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
     
     def test_weather_data_api(self):
-        url = reverse('api-weather-data')
+        url = reverse('weather:api-weather-data')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
     
     def test_weather_data_filtering(self):
-        url = reverse('api-weather-data')
+        url = reverse('weather:api-weather-data')
         response = self.client.get(url, {'region': 'UK', 'parameter': 'Tmean'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 1)
     
     def test_summary_api(self):
-        url = reverse('api-summary')
+        url = reverse('weather:api-summary')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Verify response structure
@@ -96,14 +96,14 @@ class WeatherAPITests(APITestCase):
         self.assertIn('parameters', response.data)
     
     def test_chart_data_api(self):
-        url = reverse('api-chart-data')
+        url = reverse('weather:api-chart-data')
         response = self.client.get(url, {'parameter': 'Tmean'})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('labels', response.data)
         self.assertIn('datasets', response.data)
     
     def test_parse_data_api_unauthorized(self):
-        url = reverse('api-parse-data')
+        url = reverse('weather:api-parse-data')
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
