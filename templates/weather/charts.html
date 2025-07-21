@@ -315,13 +315,16 @@ function loadYearlyAverages(region, parameter) {
     fetch(`/api/summary/?region=${region}&parameter=${parameter}`)
         .then(response => response.json())
         .then(data => {
-            if (data && data.length > 0) {
-                const years = data.map(item => item.year);
-                const averages = data.map(item => item.avg_value);
+            if (data && data.summary && data.summary.length > 0) {
+                const years = data.summary.map(item => item.year);
+                const averages = data.summary.map(item => item.avg_value);
                 
                 yearlyChart.data.labels = years;
                 yearlyChart.data.datasets[0].data = averages;
                 yearlyChart.update();
+                
+                // Update statistics
+                calculateStatistics(averages);
             }
         })
         .catch(error => console.error('Error loading yearly data:', error));
