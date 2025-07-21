@@ -1,0 +1,16 @@
+Django==4.2.7
+djangorestframework==3.14.0
+coreapi==2.3.3
+pyyaml==6.0.1
+requests==2.31.0
+python-decouple==3.8
+django-cors-headers==4.3.1
+whitenoise==6.6.0
+gunicorn==21.2.0
+psycopg2-binary==2.9.9
+celery==5.3.4
+redis==5.0.1
+matplotlib==3.8.2
+seaborn==0.13.0
+pandas==2.1.4
+plotly==5.17.0
