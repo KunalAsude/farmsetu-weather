@@ -31,6 +31,71 @@ class MetOfficeParser:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
     
+    def _parse_csv(self, csv_text):
+        """
+        Parse CSV text into a list of dictionaries.
+        
+        Args:
+            csv_text (str): CSV formatted text data
+            
+        Returns:
+            list: List of dictionaries containing the parsed data
+            
+        Raises:
+            ValueError: If the CSV is malformed, empty, or doesn't contain required fields
+        """
+        import csv
+        from io import StringIO
+        
+        if not csv_text or not csv_text.strip():
+            raise ValueError("Empty CSV data provided")
+            
+        # Create a file-like object from the string
+        csv_file = StringIO(csv_text.strip())
+        
+        try:
+            # Try to parse the CSV data
+            reader = csv.DictReader(csv_file)
+            
+            # Check if we have the required fields
+            if not reader.fieldnames or 'year' not in reader.fieldnames or 'month' not in reader.fieldnames or 'value' not in reader.fieldnames:
+                raise ValueError("CSV must contain 'year', 'month', and 'value' columns")
+                
+            # Convert to list of dictionaries
+            result = []
+            for row in reader:
+                if not row:  # Skip empty rows
+                    continue
+                    
+                # Validate required fields
+                if not row.get('year') or not row.get('month') or not row.get('value'):
+                    raise ValueError("Missing required fields in CSV row")
+                    
+                # Convert and validate field types
+                try:
+                    year = int(row['year'])
+                    month = int(row['month'])
+                    value = float(row['value'])
+                    
+                    result.append({
+                        'year': year,
+                        'month': month,
+                        'value': value
+                    })
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Invalid data format in CSV: {str(e)}")
+            
+            if not result:
+                raise ValueError("No valid data rows found in CSV")
+                
+            return result
+            
+        except csv.Error as e:
+            raise ValueError(f"Error parsing CSV data: {str(e)}")
+        except Exception as e:
+            # Convert any other exception to ValueError for consistency
+            raise ValueError(f"Error processing CSV: {str(e)}")
+    
     def initialize_regions_and_parameters(self):
         """Initialize regions and parameters in database"""
         for code, name in self.REGIONS.items():
