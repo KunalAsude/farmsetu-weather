@@ -8,6 +8,8 @@ from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
@@ -70,7 +72,12 @@ class WeatherDataDetailView(generics.RetrieveAPIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class ParseDataView(APIView):
-    """API to trigger data parsing"""
+    """
+    API to trigger data parsing
+    Requires authentication to prevent unauthorized data parsing
+    """
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def post(self, request):
         parser = MetOfficeParser()
@@ -108,7 +115,20 @@ class WeatherSummaryView(APIView):
         if year:
             queryset = queryset.filter(year=year)
         
-        # Group by region, parameter, and year
+        # Get total record count
+        total_records = queryset.count()
+        
+        # Get date range
+        date_range = queryset.aggregate(
+            min_year=Min('year'),
+            max_year=Max('year')
+        )
+        
+        # Get unique regions and parameters
+        regions = list(WeatherRegion.objects.values('code', 'name').distinct())
+        parameters = list(WeatherParameter.objects.values('code', 'name').distinct())
+        
+        # Group by region, parameter, and year for detailed statistics
         summary = queryset.values(
             'region__name', 'parameter__name', 'year'
         ).annotate(
@@ -118,7 +138,19 @@ class WeatherSummaryView(APIView):
             count=Count('value')
         ).order_by('-year')
         
-        return Response(summary)
+        # Prepare the response data
+        response_data = {
+            'total_records': total_records,
+            'data_range': {
+                'min_year': date_range['min_year'],
+                'max_year': date_range['max_year']
+            },
+            'regions': regions,
+            'parameters': parameters,
+            'summary': list(summary)
+        }
+        
+        return Response(response_data)
 
 class DataSourceListView(generics.ListAPIView):
     """List all data sources"""
