@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .weather-header {
+        font-size: 2.8rem;
+        font-weight: 700;
+        margin-top: 2.5rem;
+        margin-bottom: 2.5rem;
+        text-align: center;
+        letter-spacing: 1px;
+    }
+    .weather-controls {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .weather-controls select,
+    .weather-controls input[type="text"] {
+        min-width: 180px;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 1rem;
+    }
+    .weather-controls button {
+        font-size: 1rem;
+        padding: 0.5rem 1.5rem;
+        border-radius: 6px;
+        border: none;
+        margin-left: 0.5rem;
+        transition: background 0.2s;
+    }
+    .weather-controls .btn-primary {
+        background: #1976d2;
+        color: #fff;
+    }
+    .weather-controls .btn-success {
+        background: #2e7d32;
+        color: #fff;
+    }
+    .weather-table-container {
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto 2rem auto;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        overflow-x: auto;
+        padding: 1.5rem 1rem;
+    }
+    .weather-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 1.08rem;
+    }
+    .weather-table th, .weather-table td {
+        padding: 0.7rem 1.1rem;
+        border-bottom: 1px solid #e0e0e0;
+        text-align: center;
+    }
+    .weather-table th {
+        background: #f5f5f5;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .weather-table tr:last-child td {
+        border-bottom: none;
+    }
+    .alert {
+        max-width: 600px;
+        margin: 1.5rem auto 0 auto;
+        text-align: center;
+    }
+</style>
+
+<div class="weather-header">Weather Data</div>
+<form method="get" class="weather-controls">
+        <select name="region">
+            <option value="">All Regions</option>
+            {% for r in regions %}
+                <option value="{{ r }}" {% if request.GET.region == r %}selected{% endif %}>{{ r }}</option>
+            {% endfor %}
+        </select>
+        <select name="parameter">
+            <option value="">All Parameters</option>
+            {% for p in parameters %}
+                <option value="{{ p }}" {% if request.GET.parameter == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="year" placeholder="Year" value="{{ request.GET.year }}">
+        <span id="season-filter-wrapper" style="display:none;">
+            <select name="season" id="season-filter">
+                <option value="">All Seasons</option>
+                {% for s in seasons %}
+                    <option value="{{ s }}" {% if request.GET.season == s %}selected{% endif %}>{{ s|title }}</option>
+                {% endfor %}
+            </select>
+        </span>
+        <input type="hidden" name="tab" id="tab-input" value="{{ request.GET.tab|default:'monthly' }}">
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <button type="button" id="parse-btn" class="btn btn-success">Parse & Load Data</button>
+        <span id="parse-loading" style="display:none;margin-left:1rem;vertical-align:middle;">
+            <span class="spinner-border spinner-border-sm text-success" role="status" aria-hidden="true"></span>
+            <span style="font-size:1.1rem;">Loading, please wait...</span>
+        </span>
+</form>
+<div id="parse-message"></div>
+<div class="weather-table-container">
+    <ul class="nav nav-tabs" id="dataTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if request.GET.tab|default:'monthly' == 'monthly' %}active{% endif %}" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="true">Monthly Data</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if request.GET.tab == 'seasonal' %}active{% endif %}" id="seasonal-tab" data-bs-toggle="tab" data-bs-target="#seasonal" type="button" role="tab" aria-controls="seasonal" aria-selected="false">Seasonal Data</button>
+        </li>
+    </ul>
+    <div class="tab-content" id="dataTabContent" style="margin-top:1.5rem;">
+        <div class="tab-pane fade show active" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+            <div style="text-align:right;font-size:1.1rem;margin-bottom:0.5rem;">
+                <strong>Total Records:</strong> {{ total_count }}
+            </div>
+            <table class="weather-table">
+                <thead>
+                <tr>
+                            <th>Region</th>
+                            <th>Year</th>
+                            <th>Month</th>
+                            {% for param in param_list %}
+                                <th>{{ param }}</th>
+                            {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.region }}</td>
+                            <td>{{ record.year }}</td>
+                                <td>{{ record.month_name }}</td>
+                            <td>{% if record.Tmax is not None %}{{ record.Tmax }}{% else %}-{% endif %}</td>
+                            <td>{% if record.Tmin is not None %}{{ record.Tmin }}{% else %}-{% endif %}</td>
+                            <td>{% if record.Tmean is not None %}{{ record.Tmean }}{% else %}-{% endif %}</td>
+                            <td>{% if record.Sunshine is not None %}{{ record.Sunshine }}{% else %}-{% endif %}</td>
+                            <td>{% if record.Rainfall is not None %}{{ record.Rainfall }}{% else %}-{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" style="text-align:center;">No data found.</td></tr>
+                        {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="tab-pane fade" id="seasonal" role="tabpanel" aria-labelledby="seasonal-tab">
+            <div style="text-align:right;font-size:1.1rem;margin-bottom:0.5rem;">
+                <strong>Total Records:</strong> {{ total_seasonal }}
+            </div>
+            <table class="weather-table">
+                <thead>
+                <tr>
+                    <th>Region</th><th>Year</th><th>Season</th><th>Value</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for record in seasonal_records %}
+                <tr>
+                    <td>{{ record.weather_record.region }}</td>
+                    <td>{{ record.weather_record.year }}</td>
+                    <td>{{ record.season|title }}</td>
+                    <td>{% if record.value is not None %}{{ record.value }}{% else %}<span style="color:#aaa;">N/A</span>{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;">No data found.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Show/hide season filter based on active tab and only submit it for seasonal
+function updateSeasonFilterVisibility() {
+    var seasonFilterWrapper = document.getElementById('season-filter-wrapper');
+    var tabInput = document.getElementById('tab-input');
+    var monthlyTab = document.getElementById('monthly-tab');
+    var seasonalTab = document.getElementById('seasonal-tab');
+    if (seasonalTab.classList.contains('active')) {
+        seasonFilterWrapper.style.display = '';
+        tabInput.value = 'seasonal';
+    } else {
+        seasonFilterWrapper.style.display = 'none';
+        tabInput.value = 'monthly';
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    updateSeasonFilterVisibility();
+    var monthlyTab = document.getElementById('monthly-tab');
+    var seasonalTab = document.getElementById('seasonal-tab');
+    if (monthlyTab && seasonalTab) {
+        monthlyTab.addEventListener('shown.bs.tab', updateSeasonFilterVisibility);
+        seasonalTab.addEventListener('shown.bs.tab', updateSeasonFilterVisibility);
+    }
+    // On form submit, remove season filter if not on seasonal tab
+    var form = document.querySelector('form.weather-controls');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            var tab = document.getElementById('tab-input').value;
+            if (tab !== 'seasonal') {
+                var seasonSelect = document.getElementById('season-filter');
+                if (seasonSelect) {
+                    seasonSelect.disabled = true;
+                }
+            }
+        });
+    }
+    // On page load, activate correct tab if needed
+    var tab = document.getElementById('tab-input').value;
+    if (tab === 'seasonal') {
+        var trigger = new bootstrap.Tab(document.getElementById('seasonal-tab'));
+        trigger.show();
+    }
+});
+</script>
+<script>
+const parseBtn = document.getElementById('parse-btn');
+const parseLoading = document.getElementById('parse-loading');
+parseBtn.onclick = function() {
+    parseBtn.disabled = true;
+    parseLoading.style.display = '';
+    document.getElementById('parse-message').innerHTML = '';
+    fetch('/api/weather-records/parse/', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('parse-message').innerHTML = `<div class='alert alert-info mt-3'>${data.message || 'Done.'}</div>`;
+            parseBtn.disabled = false;
+            parseLoading.style.display = 'none';
+        })
+        .catch(() => {
+            document.getElementById('parse-message').innerHTML = `<div class='alert alert-danger mt-3'>Error loading data.</div>`;
+            parseBtn.disabled = false;
+            parseLoading.style.display = 'none';
+        });
+};
+</script>
+{% endblock %}

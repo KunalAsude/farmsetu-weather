@@ -1,60 +1,34 @@
+
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 
-class WeatherRegion(models.Model):
-    """Model to store UK regions"""
-    code = models.CharField(max_length=10, unique=True)
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True)
-    
+class WeatherRecord(models.Model):
+    @property
+    def month_name(self):
+        month_names = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        if self.month and 1 <= self.month <= 12:
+            return month_names[self.month]
+        return "-"
+    region = models.CharField(max_length=32)
+    year = models.IntegerField()
+    month = models.IntegerField(null=True, blank=True)
+    Tmax = models.FloatField(null=True, blank=True)
+    Tmin = models.FloatField(null=True, blank=True)
+    Tmean = models.FloatField(null=True, blank=True)
+    Sunshine = models.FloatField(null=True, blank=True)
+    Rainfall = models.FloatField(null=True, blank=True)
+
     def __str__(self):
-        return f"{self.name} ({self.code})"
+        month_names = [None, 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        if self.month:
+            month_str = month_names[self.month] if 1 <= self.month <= 12 else str(self.month)
+            return f"{self.region} {self.year}-{month_str}: Tmax={self.Tmax}, Tmin={self.Tmin}, Tmean={self.Tmean}, Sunshine={self.Sunshine}, Rainfall={self.Rainfall}"
+        else:
+            return f"{self.region} {self.year}: Tmax={self.Tmax}, Tmin={self.Tmin}, Tmean={self.Tmean}, Sunshine={self.Sunshine}, Rainfall={self.Rainfall}"
 
-class WeatherParameter(models.Model):
-    """Model to store weather parameters"""
-    PARAMETER_CHOICES = [
-        ('Tmax', 'Maximum Temperature'),
-        ('Tmin', 'Minimum Temperature'),
-        ('Tmean', 'Mean Temperature'),
-        ('Sunshine', 'Sunshine Hours'),
-        ('Rainfall', 'Rainfall'),
-    ]
-    
-    code = models.CharField(max_length=20, choices=PARAMETER_CHOICES, unique=True)
-    name = models.CharField(max_length=100)
-    unit = models.CharField(max_length=20)
-    description = models.TextField(blank=True)
-    
-    def __str__(self):
-        return f"{self.name} ({self.code})"
-
-class WeatherData(models.Model):
-    """Main model to store parsed weather data"""
-    region = models.ForeignKey(WeatherRegion, on_delete=models.CASCADE)
-    parameter = models.ForeignKey(WeatherParameter, on_delete=models.CASCADE)
-    year = models.IntegerField(validators=[MinValueValidator(1900), MaxValueValidator(2030)])
-    month = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+class SeasonalWeatherRecord(models.Model):
+    weather_record = models.ForeignKey(WeatherRecord, on_delete=models.CASCADE, related_name='seasonal_records')
+    season = models.CharField(max_length=8)
     value = models.FloatField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        unique_together = ['region', 'parameter', 'year', 'month']
-        ordering = ['-year', '-month']
-    
-    def __str__(self):
-        return f"{self.region.code} - {self.parameter.code} - {self.year}/{self.month:02d}: {self.value}"
 
-class DataSource(models.Model):
-    """Model to track data sources and last update times"""
-    url = models.URLField()
-    region = models.ForeignKey(WeatherRegion, on_delete=models.CASCADE)
-    parameter = models.ForeignKey(WeatherParameter, on_delete=models.CASCADE)
-    last_updated = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    
-    class Meta:
-        unique_together = ['region', 'parameter']
-    
     def __str__(self):
-        return f"{self.region.code} - {self.parameter.code} Source"
+        return f"{self.weather_record.region} {self.weather_record.parameter} {self.weather_record.year}-{self.season}: {self.value}"

@@ -36,7 +36,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'weather:dashboard' %}">
+            <a class="navbar-brand" href="{% url 'weather:weather_list' %}">
                 <i class="fas fa-cloud-sun"></i> FarmSetu Weather
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -45,13 +45,8 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'weather:dashboard' %}">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'weather:charts' %}">
-                            <i class="fas fa-chart-line"></i> Charts
+                        <a class="nav-link" href="{% url 'weather:weather_list' %}">
+                            <i class="fas fa-table"></i> Weather Data
                         </a>
                     </li>
                     <li class="nav-item">
